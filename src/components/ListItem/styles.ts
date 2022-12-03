@@ -12,10 +12,18 @@ export const Container = styled.div(({done}: ContainerProps)=>(
     border-radius: 10px;
     margin-bottom: 10px;
     align-items: center;
+    justify-content: space-between;
+
+    div{
+        display: flex;
+        align-items: center;
+    }
 
     label{
         color: #dee7e7;
         text-decoration: ${done ? 'line-through' : 'initial'};
+        font-size: 18px;
+        font-weight: 400
     }
 
     input{
