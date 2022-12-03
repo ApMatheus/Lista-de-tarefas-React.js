@@ -1,23 +1,59 @@
 import React from 'react';
 import { Container, Area, Header } from './App.styles';
-import { useState } from 'react'; 
+import { useState, useCallback, useEffect } from 'react';
 import { Item } from './types/item'
 import ListItem from './components/ListItem';
 import AddArea from './components/AddArea';
+import { supabase } from './components/api/supabase';
 
 
 function App() {
 
-  const[list, setList] = useState<Item[]>([
-    {id: 1, name: 'Comprar pão', done: false},
-    {id: 2, name: 'Comprar queijo', done: true}
+  const [list, setList] = useState<Item[]>([
   ])
 
-  const handleAddTask = (taskName: string)=>{
+  const RequestSupabase = useCallback(async () => {
+
+    let { data: Tarefas, error } = await supabase
+      .from('Tarefas')
+      .select("*")
+
+    let array: any = [];
+
+    Tarefas?.forEach((e) => {
+      array.push({
+        id: e.id,
+        name: e.name,
+        done: e.done
+      });
+    })
+    setList(array)
+
+  }, [])
+
+  useEffect(() => {
+    RequestSupabase();
+  }, [])
+
+  const Insert = async (name: string) => {
+
+    const { data, error } = await supabase
+      .from('Tarefas')
+      .insert([
+        {
+          id: list.length + 1,
+          name: name,
+          done: false
+        },
+      ]);
+    RequestSupabase();
+  }
+
+  const handleAddTask = (taskName: string) => {
     let newList = [...list];
     newList.push(
       {
-        id: list.length+1,
+        id: list.length + 1,
         name: taskName,
         done: false
       }
@@ -25,25 +61,44 @@ function App() {
     setList(newList);
   }
 
+  const Update = async (id: number, done:boolean) => {
+
+    const { data, error } = await supabase
+      .from('Tarefas')
+      .update({ done: done })
+      .eq('id', id)
+      RequestSupabase();
+  }
+
   const handleTaskChange = (id: number, done: boolean) => {
     let newList = [...list];
-    for(let i in newList) {
-      if(newList[i].id === id) {
+    for (let i in newList) {
+      if (newList[i].id === id) {
         newList[i].done = done;
       }
     }
-    setList(newList);
+    Update(id, done)
   }
+
+  const DeleteItem = async (id: number) => {
+    const { error } = await supabase
+        .from('Tarefas')
+        .delete()
+        .eq('id', id)
+
+        RequestSupabase();
+        
+}
 
   return (
     <Container>
       <Area>
         <Header>Lista de Tarefas</Header>
 
-        <AddArea onEnter={handleAddTask}/>
+        <AddArea onEnter={Insert} />
         {
-          list.map((item, index)=>(
-            <ListItem key={index} item={item} onChange={handleTaskChange}/>
+          list.map((item, index) => (
+            <ListItem key={index} item={item} onChange={handleTaskChange} onClick={DeleteItem}/>
           ))
         }
       </Area>
